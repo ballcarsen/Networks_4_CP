@@ -154,7 +154,6 @@ class Router:
     ## Print routing table
     def print_routes(self):
         #TODO: print the routes as a two dimensional table
-        print(self.rt_tbl_D)
         
         # print router info
         print('%s: sending packet...' % (self))
@@ -198,9 +197,6 @@ class Router:
 
         # print bottom border
         print(border)
-
-
-        #print(self.rt_tbl_D)
 
 
     ## called when printing the object

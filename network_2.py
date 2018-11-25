@@ -1,6 +1,6 @@
 import queue
 import threading
-
+import json
 
 ## wrapper class for a queue of packets
 class Interface:
@@ -141,16 +141,60 @@ class Router:
         #save neighbors and interfeces on which we connect to them
         self.cost_D = cost_D    # {neighbor: {interface: cost}}
         #TODO: set up the routing table for connected hosts
-        self.rt_tbl_D = {}      # {destination: {router: cost}}
+        #self.rt_tbl_D = {dest:{self.name: cost for key,cost in cost_D[dest].items()} for dest in cost_D}      # {destination: {router: cost}}
+        #self.rt_tbl_D[self.name] = {self.name: 0}      # {destination: {router: cost}}
+
+        self.rt_tbl_D = json.load(open('table.json','r'))
         print('%s: Initialized routing table' % self)
         self.print_routes()
-    
         
     ## Print routing table
     def print_routes(self):
-        #TODO: print the routes as a two dimensional table
+        # TODO: print the routes as a two dimensional table
         print(self.rt_tbl_D)
 
+        # print router info
+        print('%s: sending packet...' % (self))
+
+        # construct border for table
+        border = ' '
+
+        # something wrong here...
+        for key in self.rt_tbl_D.keys():
+            border += '---------'
+        # print top border
+        print(border)
+
+        # print first row
+        rinfo = '|' + self.name + '   |   '
+        for key in self.rt_tbl_D.keys():
+            rinfo += key
+            rinfo += ' |   '
+        print(rinfo)
+
+        rcost = ' |  ' + self.name + '  |   '
+        body = ''
+        lgth = len(self.rt_tbl_D[self.name].keys())
+        count = 1
+        for key in self.rt_tbl_D[self.name].keys():
+            for _ in range(len(self.rt_tbl_D) + 1):
+                body += '------|'
+            body += '\n|'
+
+            body += key + '   |   '
+            for _, val in self.rt_tbl_D.items():
+                if key in val:
+                    v = val[key]
+                    if v == 1000:
+                        v = 'X'
+                body += str(v) + '  |   '
+            if count != lgth:
+                body += '\n'
+            count += 1
+        print(body)
+
+        # print bottom border
+        print(border)
 
     ## called when printing the object
     def __str__(self):
@@ -182,18 +226,20 @@ class Router:
         try:
             try:
                 out_info = self.rt_tbl_D[p.dst]
-                min = (self.name, 0)
-                for router in out_info.keys():
-                    if min[0] == self.name:
-                        min = (router, out_info[router])
-                    elif min[1] > out_info[router]:
-                        min = (router, out_info[router])
-                print("Lowest cost path is through %s with a cost of %d" %(min[0], min[1]))
-                out_info = self.cost_D[min[0]]
-                intf = out_info.keys()[0]
-
             except KeyError:
                 print("Destination not in Table")
+            min = (self.name, 0)
+            for router in out_info.keys():
+                if min[0] == self.name:
+                    min = (router, out_info[router])
+                elif min[1] > out_info[router]:
+                    min = (router, out_info[router])
+            print("Lowest cost path is through %s with a cost of %d" %(min[0], min[1]))
+            out_info = self.cost_D[min[0]]
+            intf = list(out_info.keys())[0]
+
+
+            print(self.rt_tbl_D)
             self.intf_L[intf].put(p.to_byte_S(), 'out', True)
             print('%s: forwarding packet "%s" from interface %d to %d' % \
                 (self, p, i, intf))
