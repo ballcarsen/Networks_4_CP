@@ -144,7 +144,7 @@ class Router:
         
         
         #TODO: set up the routing table for connected hosts
-        elf.rt_tbl_D = {dest:{self.name: cost for key,cost in cost_D[dest].items()} for dest in cost_D}      # {destination: {router: cost}}
+        self.rt_tbl_D = {dest:{self.name: cost for key,cost in cost_D[dest].items()} for dest in cost_D}      # {destination: {router: cost}}
         self.rt_tbl_D[self.name] = {self.name: 0}      # {destination: {router: cost}}
         print('%s: Initialized routing table' % self)
         self.print_routes()
@@ -161,8 +161,8 @@ class Router:
         border = ''
         
         # something wrong here...
-        for item in self.rt_tbl_D.keys():
-            border += '--------'
+        for key in self.rt_tbl_D.keys():
+            self.rt_tbl_D[key] += '--------'
         # print top border
         print(border)
 
