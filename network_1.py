@@ -169,7 +169,7 @@ class Router:
         # print first row
         rinfo = '|' + self.name + '   |   '
         for key in self.rt_tbl_D.keys():
-            key += item + ' |   '
+            self.rt_tbl_D[key] += ' |   '
         print(rinfo)
 
         rcost = ' |  ' + self.name + '  |   '
