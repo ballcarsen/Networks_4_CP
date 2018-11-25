@@ -2,6 +2,7 @@ import queue
 import threading
 
 
+
 ## wrapper class for a queue of packets
 class Interface:
     ## @param maxsize - the maximum size of the queue storing packets
@@ -140,8 +141,11 @@ class Router:
         self.intf_L = [Interface(max_queue_size) for _ in range(len(cost_D))]
         #save neighbors and interfeces on which we connect to them
         self.cost_D = cost_D    # {neighbor: {interface: cost}}
+        
+        
         #TODO: set up the routing table for connected hosts
-        self.rt_tbl_D = {}      # {destination: {router: cost}}
+        elf.rt_tbl_D = {dest:{self.name: cost for key,cost in cost_D[dest].items()} for dest in cost_D}      # {destination: {router: cost}}
+        self.rt_tbl_D[self.name] = {self.name: 0}      # {destination: {router: cost}}
         print('%s: Initialized routing table' % self)
         self.print_routes()
     
@@ -149,7 +153,48 @@ class Router:
     ## Print routing table
     def print_routes(self):
         #TODO: print the routes as a two dimensional table
-        print(self.rt_tbl_D)
+        
+        # print router info
+        print('%s: sending packet...' % (self))
+
+        # construct border for table
+        border = ''
+        
+        # something wrong here...
+        for item in self.rt_tbl_D.keys():
+            border += '--------'
+        # print top border
+        print(border)
+
+        # print first row
+        rinfo = '|' + self.name + '   |   '
+        for key in self.rt_tbl_D.keys():
+            key += item + ' |   '
+        print(rinfo)
+
+        rcost = ' |  ' + self.name + '  |   '
+        body = ''
+        for key in self.rt_tbl_D[self.name].keys():
+            for _ in range(len(self.rt_tbl_D) + 1):
+                body += '-------|'
+            body += '\n|'
+
+            body += key + '   |   '
+            for _, val in self.rt_tbl_D.items():
+                if key in val:
+                    v = val[key]
+                    if v == 1000:
+                        v = 'X'
+                body += str(v) + '  |   '
+            body += '\n'
+        
+        print(body)
+
+        # print bottom border
+        print(border)
+
+
+        #print(self.rt_tbl_D)
 
 
     ## called when printing the object
@@ -195,8 +240,10 @@ class Router:
     # @param i Interface number on which to send out a routing update
     def send_routes(self, i):
         # TODO: Send out a routing table update
+        
+        
         #create a routing table update packet
-        p = NetworkPacket(0, 'control', 'DUMMY_ROUTING_TABLE')
+        
         try:
             print('%s: sending routing update "%s" from interface %d' % (self, p, i))
             self.intf_L[i].put(p.to_byte_S(), 'out', True)
@@ -210,7 +257,51 @@ class Router:
     def update_routes(self, p, i):
         #TODO: add logic to update the routing tables and
         # possibly send out routing updates
+        
+        packet = str(p)
+        source_start_len = NetworkPacket.prot_S_length + NetworkPacket.dst_S_length
+        source_end_len = source_start_len + 2
+        source_router = packet[source_start_len : source_end_len]
+        vector = json.loads(packet[source_end_len:])
+
+        #  Load up the aggregate list of keys
+        keys = self.rt_tbl_D.keys() | vector.keys()
+
+        router_list = []
+        for key in keys:
+            # Add Routers to the router_list
+            if key.startswith("R"):
+                router_list.append(key)
+        for key in keys:
+            if key not in vector:
+                vector[key] = {source_router: 1000}
+
+            if key not in self.rt_tbl_D:
+                self.rt_tbl_D[key] = {self.name : 1000}
+
+            self.rt_tbl_D[key][source_router] = vector[key][source_router]
+
+        for dest_key in keys:
+            for router in router_list:
+                route_vector = self.rt_tbl_D[router]
+                dest_vector = self.rt_tbl_D[dest_key]
+
+                if router == dest_key:
+                    continue
+
+                if router not in dest_vector:
+                    dest_vector[router] = 1000
+
+                bellman_ford = route_vector[self.name] + dest_vector[router]
+                if bellman_ford < dest_vector[self.name]:
+                    dest_vector[self.name] = bellman_ford
+                    for port in range(len(self.intf_L)):
+                        self.send_routes(port)
+        
         print('%s: Received routing update %s from interface %d' % (self, p, i))
+        
+
+
 
                 
     ## thread target for the host to keep forwarding data
