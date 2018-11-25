@@ -1,5 +1,6 @@
 import queue
 import threading
+import json
 
 
 
@@ -153,30 +154,34 @@ class Router:
     ## Print routing table
     def print_routes(self):
         #TODO: print the routes as a two dimensional table
+        print(self.rt_tbl_D)
         
         # print router info
         print('%s: sending packet...' % (self))
 
         # construct border for table
-        border = ''
+        border = ' '
         
         # something wrong here...
         for key in self.rt_tbl_D.keys():
-            self.rt_tbl_D[key] += '--------'
+            border += '---------'
         # print top border
         print(border)
 
         # print first row
         rinfo = '|' + self.name + '   |   '
         for key in self.rt_tbl_D.keys():
-            self.rt_tbl_D[key] += ' |   '
+            rinfo += key
+            rinfo += ' |   '
         print(rinfo)
 
         rcost = ' |  ' + self.name + '  |   '
         body = ''
+        lgth = len(self.rt_tbl_D[self.name].keys())
+        count = 1
         for key in self.rt_tbl_D[self.name].keys():
             for _ in range(len(self.rt_tbl_D) + 1):
-                body += '-------|'
+                body += '------|'
             body += '\n|'
 
             body += key + '   |   '
@@ -186,8 +191,9 @@ class Router:
                     if v == 1000:
                         v = 'X'
                 body += str(v) + '  |   '
-            body += '\n'
-        
+            if count != lgth:
+                body += '\n'
+            count += 1
         print(body)
 
         # print bottom border

@@ -180,12 +180,23 @@ class Router:
     #  @param i Incoming interface number for packet p
     def forward_packet(self, p, i):
         try:
-            # TODO: Here you will need to implement a lookup into the 
-            # forwarding table to find the appropriate outgoing interface
-            # for now we assume the outgoing interface is 1
-            self.intf_L[1].put(p.to_byte_S(), 'out', True)
+            try:
+                out_info = self.rt_tbl_D[p.dst]
+                min = (self.name, 0)
+                for router in out_info.keys():
+                    if min[0] == self.name:
+                        min = (router, out_info[router])
+                    elif min[1] > out_info[router]:
+                        min = (router, out_info[router])
+                print("Lowest cost path is through %s with a cost of %d" %(min[0], min[1]))
+                out_info = self.cost_D[min[0]]
+                intf = out_info.keys()[0]
+
+            except KeyError:
+                print("Destination not in Table")
+            self.intf_L[intf].put(p.to_byte_S(), 'out', True)
             print('%s: forwarding packet "%s" from interface %d to %d' % \
-                (self, p, i, 1))
+                (self, p, i, intf))
         except queue.Full:
             print('%s: packet "%s" lost on interface %d' % (self, p, i))
             pass
