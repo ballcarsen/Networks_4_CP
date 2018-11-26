@@ -243,11 +243,15 @@ class Router:
     def send_routes(self, i):
         # TODO: Send out a routing table update
         
-        
-        #create a routing table update packet
-        
+        # construct a string containing the route
+        # Name///Node/Link/Cost // Node/Link/Cost.....
+        routing_S = self.name + "///"
+        for i, j in self.rt_tbl_D.items():
+            for link, cost in j.items():
+                routing_S += str(i) + "/" + str(link) + "/" + str(cost) + " // " # two // denotes a new route, one / seperates link and cost
+        p = NetworkPacket(0, 'control', routing_S)
         try:
-            print('%s: sending routing update "%s" from interface %d' % (self, p, i))
+            # print('%s: sending routing update "%s" from interface %d' % (self, p, i))
             self.intf_L[i].put(p.to_byte_S(), 'out', True)
         except queue.Full:
             print('%s: packet "%s" lost on interface %d' % (self, p, i))
